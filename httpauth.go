@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package httpauth provides basic wrappers for handling server-side Basic HTTP authentication.
+// Package httpauth provides a wrapper for http.Handler implementing basic HTTP authentication.
 package httpauth
 
 import "net/http"
@@ -16,7 +16,7 @@ type Checker interface {
 // Creds implements Checker and is a basic mapping of usernames and passwords.
 type Creds map[string]string
 
-// Check implements Verfier.
+// Check implements Checker.
 func (c Creds) Check(username, password string) bool {
 	if c == nil {
 		return false
@@ -33,10 +33,11 @@ type None struct{}
 // Check implements Checker.
 func (n None) Check(username, password string) bool { return true }
 
-// HandlerFunc returns a new http.HandlerFunc which checks requests using the
-// Checker and defers to the http.HandlerFunc when successful.
-func HandlerFunc(v Checker, f http.HandlerFunc) http.HandlerFunc {
-	h := NewHandler(v, f)
+// HandlerFunc returns an http.HandlerFunc which checks basic HTTP authentication header
+// values using Checker and passes requests to the given http.HandlerFunc when Check returns
+// true (responds with http.StatusUnauthorized if the call to Check returns false).
+func HandlerFunc(c Checker, f http.HandlerFunc) http.HandlerFunc {
+	h := NewHandler(c, f)
 	return http.HandlerFunc(h.ServeHTTP)
 }
 
@@ -46,8 +47,8 @@ type handler struct {
 }
 
 // NewHandler returns an http.Handler which checks basic HTTP authentication header values
-// using the Checker, responding with http.StatusUnauthorized if the call to Check returns
-// false.
+// using the Checker and passes requests to the given http.Handler when Check returns true
+// (responds with http.StatusUnauthorized if the call to Check returns false).
 func NewHandler(c Checker, h http.Handler) http.Handler {
 	return &handler{
 		Handler: h,
@@ -67,12 +68,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Handler.ServeHTTP(w, r)
 }
 
-// Handle creates an authentication wrapper around http.Handle.
+// Handle is a convenience function which calls http.Handle with the pattern and wrapped
+// http.Handler (see NewHandler).
 func Handle(c Checker, pattern string, h http.Handler) {
 	http.Handle(pattern, NewHandler(c, h))
 }
 
-// HandleFunc creates an authentication wrapper around http.HandleFunc.
+// HandleFunc is a convenience function which calls http.HandleFunc with the pattern and
+// wrapped http.HandlerFunc (see HandlerFunc).
 func HandleFunc(c Checker, pattern string, h http.HandlerFunc) {
 	http.HandleFunc(pattern, HandlerFunc(c, h))
 }
