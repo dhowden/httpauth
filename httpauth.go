@@ -79,3 +79,17 @@ func Handle(c Checker, pattern string, h http.Handler) {
 func HandleFunc(c Checker, pattern string, h http.HandlerFunc) {
 	http.HandleFunc(pattern, HandlerFunc(c, h))
 }
+
+// Wrapper is a convenience type which simplifies Handler and HandlerFunc creation for the
+// same Checker.
+type Wrapper struct {
+	Checker
+}
+
+func (w Wrapper) Handler(h http.Handler) http.Handler {
+	return NewHandler(w.Checker, h)
+}
+
+func (w Wrapper) HandlerFunc(h http.HandlerFunc) http.HandlerFunc {
+	return HandlerFunc(w.Checker, h)
+}

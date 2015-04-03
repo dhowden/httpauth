@@ -149,3 +149,19 @@ func TestHandlerFunc(t *testing.T) {
 	h = HandlerFunc(c, handlerFuncOK)
 	testHandlerOK(t, h)
 }
+
+func TestWrapper(t *testing.T) {
+	w := Wrapper{fixedChecker(false)}
+	hf := w.HandlerFunc(handlerFuncOK)
+	testHandlerUnauthorised(t, hf)
+
+	h := w.Handler(http.HandlerFunc(handlerFuncOK))
+	testHandlerUnauthorised(t, h)
+
+	w = Wrapper{fixedChecker(true)}
+	hf = w.HandlerFunc(handlerFuncOK)
+	testHandlerOK(t, hf)
+
+	h = w.Handler(http.HandlerFunc(handlerFuncOK))
+	testHandlerOK(t, h)
+}
