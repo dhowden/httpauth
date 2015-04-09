@@ -84,8 +84,8 @@ func handlerFuncOK(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func testHandlerUnauthorised(t *testing.T, h http.Handler) {
-	r, err := http.NewRequest("GET", "/", nil)
+func testHandlerUnauthorised(t *testing.T, url string, h http.Handler) {
+	r, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		t.Fatalf("unexpected error creating request: %v", err)
 	}
@@ -107,8 +107,8 @@ func testHandlerUnauthorised(t *testing.T, h http.Handler) {
 	}
 }
 
-func testHandlerOK(t *testing.T, h http.Handler) {
-	r, err := http.NewRequest("GET", "/", nil)
+func testHandlerOK(t *testing.T, url string, h http.Handler) {
+	r, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		t.Fatalf("unexpected error creating request: %v", err)
 	}
@@ -133,35 +133,57 @@ func (c fixedChecker) Check(username, password string) bool { return bool(c) }
 func TestHandler(t *testing.T) {
 	c := fixedChecker(false)
 	h := NewHandler(c, http.HandlerFunc(handlerFuncOK))
-	testHandlerUnauthorised(t, h)
+	testHandlerUnauthorised(t, "/", h)
 
 	c = fixedChecker(true)
 	h = NewHandler(c, http.HandlerFunc(handlerFuncOK))
-	testHandlerOK(t, h)
+	testHandlerOK(t, "/", h)
 }
 
 func TestHandlerFunc(t *testing.T) {
 	c := fixedChecker(false)
 	h := HandlerFunc(c, handlerFuncOK)
-	testHandlerUnauthorised(t, h)
+	testHandlerUnauthorised(t, "/", h)
 
 	c = fixedChecker(true)
 	h = HandlerFunc(c, handlerFuncOK)
-	testHandlerOK(t, h)
+	testHandlerOK(t, "/", h)
 }
 
-func TestWrapper(t *testing.T) {
-	w := Wrapper{fixedChecker(false)}
-	hf := w.HandlerFunc(handlerFuncOK)
-	testHandlerUnauthorised(t, hf)
+func TestDefaultHandle(t *testing.T) {
+	c := fixedChecker(false)
+	HandleFunc(c, "/hfu", handlerFuncOK)
+	testHandlerUnauthorised(t, "/hfu", http.DefaultServeMux)
 
-	h := w.Handler(http.HandlerFunc(handlerFuncOK))
-	testHandlerUnauthorised(t, h)
+	Handle(c, "/hu", http.HandlerFunc(handlerFuncOK))
+	testHandlerUnauthorised(t, "/hu", http.DefaultServeMux)
 
-	w = Wrapper{fixedChecker(true)}
-	hf = w.HandlerFunc(handlerFuncOK)
-	testHandlerOK(t, hf)
+	c = fixedChecker(true)
+	HandleFunc(c, "/hfok", handlerFuncOK)
+	testHandlerOK(t, "/hfok", http.DefaultServeMux)
 
-	h = w.Handler(http.HandlerFunc(handlerFuncOK))
-	testHandlerOK(t, h)
+	Handle(c, "/hok", http.HandlerFunc(handlerFuncOK))
+	testHandlerOK(t, "/hok", http.DefaultServeMux)
+}
+
+func TestServeMux(t *testing.T) {
+	c := fixedChecker(false)
+
+	m := http.NewServeMux()
+	w := NewServeMux(c, m)
+	w.HandleFunc("/f", handlerFuncOK)
+	testHandlerUnauthorised(t, "/f", m)
+
+	w.Handle("/h", http.HandlerFunc(handlerFuncOK))
+	testHandlerUnauthorised(t, "/h", m)
+
+	c = fixedChecker(true)
+
+	m = http.NewServeMux()
+	w = NewServeMux(c, m)
+	w.HandleFunc("/f", handlerFuncOK)
+	testHandlerOK(t, "/f", m)
+
+	w.Handle("/h", http.HandlerFunc(handlerFuncOK))
+	testHandlerOK(t, "/h", m)
 }

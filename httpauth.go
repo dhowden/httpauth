@@ -80,16 +80,23 @@ func HandleFunc(c Checker, pattern string, h http.HandlerFunc) {
 	http.HandleFunc(pattern, HandlerFunc(c, h))
 }
 
-// Wrapper is a convenience type which simplifies Handler and HandlerFunc creation for the
-// same Checker.
-type Wrapper struct {
+// ServeMux is a convenience type which wraps Handle and HandleFunc calls on an http.ServeMux
+// for the same Checker.
+type ServeMux struct {
 	Checker
+	*http.ServeMux
 }
 
-func (w Wrapper) Handler(h http.Handler) http.Handler {
-	return NewHandler(w.Checker, h)
+// NewServeMux creates a new http.ServeMux which wraps calls to Handle and Handler for the
+// same Checker.
+func NewServeMux(c Checker, m *http.ServeMux) ServeMux {
+	return ServeMux{c, m}
 }
 
-func (w Wrapper) HandlerFunc(h http.HandlerFunc) http.HandlerFunc {
-	return HandlerFunc(w.Checker, h)
+func (m ServeMux) Handle(pattern string, h http.Handler) {
+	m.ServeMux.Handle(pattern, NewHandler(m.Checker, h))
+}
+
+func (m ServeMux) HandleFunc(pattern string, h http.HandlerFunc) {
+	m.ServeMux.Handle(pattern, HandlerFunc(m.Checker, h))
 }
