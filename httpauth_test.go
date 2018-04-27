@@ -2,12 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package httpauth
+package httpauth_test
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	. "github.com/dhowden/httpauth"
 )
 
 func TestCreds(t *testing.T) {
