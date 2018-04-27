@@ -13,18 +13,21 @@ type Checker interface {
 	Check(username, password string) bool
 }
 
-// Creds implements Checker and is a basic mapping of usernames and passwords.
-type Creds map[string]string
+// Creds creates a Checker which uses the map of user-password pairs.
+func Creds(m map[string]string) Checker {
+	return creds{
+		m: m,
+	}
+}
+
+type creds struct {
+	m map[string]string
+}
 
 // Check implements Checker.
-func (c Creds) Check(username, password string) bool {
-	if c == nil {
-		return false
-	}
-	if p, ok := c[username]; ok && p == password {
-		return true
-	}
-	return false
+func (c creds) Check(username, password string) bool {
+	p, ok := c.m[username]
+	return ok && p == password
 }
 
 // None is an implementation of Checker in which Check always returns true.
