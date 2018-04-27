@@ -72,8 +72,7 @@ func TestCreds(t *testing.T) {
 }
 
 func TestNone(t *testing.T) {
-	n := None{}
-	if !n.Check("", "") {
+	if !Skip.Check("", "") {
 		t.Errorf("n.Check(\"\", \"\") = false, expected: true")
 	}
 }

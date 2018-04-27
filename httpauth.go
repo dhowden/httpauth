@@ -30,11 +30,13 @@ func (c creds) Check(username, password string) bool {
 	return ok && p == password
 }
 
-// None is an implementation of Checker in which Check always returns true.
-type None struct{}
+// Skip is an implementation of Checker in which Check always returns true.
+var Skip Checker = skip{}
+
+type skip struct{}
 
 // Check implements Checker.
-func (n None) Check(username, password string) bool { return true }
+func (n skip) Check(username, password string) bool { return true }
 
 // HandlerFunc returns an http.HandlerFunc which checks basic HTTP authentication header
 // values using Checker and passes requests to the given http.HandlerFunc when Check returns
